@@ -3,35 +3,25 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Activity;
-use App\Models\Building;
-use App\Models\Organization;
+use App\Services\OrganizationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class OrganizationController extends Controller
 {
+    private OrganizationService $organizationService;
+
+    public function __construct(OrganizationService $organizationService)
+    {
+        $this->organizationService = $organizationService;
+    }
+
     /**
      * Список всех организаций в конкретном здании
      */
     public function getByBuilding(int $buildingId): JsonResponse
     {
-        $building = Building::with(['organizations.phones', 'organizations.activities'])->findOrFail($buildingId);
-        
-        $organizations = $building->organizations->map(function ($organization) {
-            return [
-                'id' => $organization->id,
-                'name' => $organization->name,
-                'phones' => $organization->getPhonesArray(),
-                'activities' => $organization->getActivitiesArray(),
-                'building' => [
-                    'id' => $organization->building->id,
-                    'address' => $organization->building->address,
-                    'latitude' => $organization->building->latitude,
-                    'longitude' => $organization->building->longitude,
-                ]
-            ];
-        });
+        $organizations = $this->organizationService->getByBuilding($buildingId);
 
         return response()->json([
             'success' => true,
@@ -44,27 +34,11 @@ class OrganizationController extends Controller
      */
     public function getByActivity(int $activityId): JsonResponse
     {
-        $activity = Activity::findOrFail($activityId);
-        $organizations = $activity->getAllOrganizations()->load(['phones', 'activities', 'building']);
-
-        $result = $organizations->map(function ($organization) {
-            return [
-                'id' => $organization->id,
-                'name' => $organization->name,
-                'phones' => $organization->getPhonesArray(),
-                'activities' => $organization->getActivitiesArray(),
-                'building' => [
-                    'id' => $organization->building->id,
-                    'address' => $organization->building->address,
-                    'latitude' => $organization->building->latitude,
-                    'longitude' => $organization->building->longitude,
-                ]
-            ];
-        });
+        $organizations = $this->organizationService->getByActivity($activityId);
 
         return response()->json([
             'success' => true,
-            'data' => $result
+            'data' => $organizations
         ]);
     }
 
@@ -79,34 +53,11 @@ class OrganizationController extends Controller
             'radius' => 'required|numeric|min:0.1|max:100',
         ]);
 
-        $latitude = $request->latitude;
-        $longitude = $request->longitude;
-        $radius = $request->radius;
-
-        $buildings = Building::with(['organizations.phones', 'organizations.activities'])
-            ->get()
-            ->filter(function ($building) use ($latitude, $longitude, $radius) {
-                return $building->distanceTo($latitude, $longitude) <= $radius;
-            });
-
-        $organizations = collect();
-        foreach ($buildings as $building) {
-            foreach ($building->organizations as $organization) {
-                $organizations->push([
-                    'id' => $organization->id,
-                    'name' => $organization->name,
-                    'phones' => $organization->getPhonesArray(),
-                    'activities' => $organization->getActivitiesArray(),
-                    'building' => [
-                        'id' => $building->id,
-                        'address' => $building->address,
-                        'latitude' => $building->latitude,
-                        'longitude' => $building->longitude,
-                        'distance' => round($building->distanceTo($latitude, $longitude), 2)
-                    ]
-                ]);
-            }
-        }
+        $organizations = $this->organizationService->getByRadius(
+            $request->latitude,
+            $request->longitude,
+            $request->radius
+        );
 
         return response()->json([
             'success' => true,
@@ -126,28 +77,12 @@ class OrganizationController extends Controller
             'max_lng' => 'required|numeric|between:-180,180',
         ]);
 
-        $buildings = Building::with(['organizations.phones', 'organizations.activities'])
-            ->whereBetween('latitude', [$request->min_lat, $request->max_lat])
-            ->whereBetween('longitude', [$request->min_lng, $request->max_lng])
-            ->get();
-
-        $organizations = collect();
-        foreach ($buildings as $building) {
-            foreach ($building->organizations as $organization) {
-                $organizations->push([
-                    'id' => $organization->id,
-                    'name' => $organization->name,
-                    'phones' => $organization->getPhonesArray(),
-                    'activities' => $organization->getActivitiesArray(),
-                    'building' => [
-                        'id' => $building->id,
-                        'address' => $building->address,
-                        'latitude' => $building->latitude,
-                        'longitude' => $building->longitude,
-                    ]
-                ]);
-            }
-        }
+        $organizations = $this->organizationService->getByArea(
+            $request->min_lat,
+            $request->max_lat,
+            $request->min_lng,
+            $request->max_lng
+        );
 
         return response()->json([
             'success' => true,
@@ -160,22 +95,11 @@ class OrganizationController extends Controller
      */
     public function show(int $id): JsonResponse
     {
-        $organization = Organization::with(['phones', 'activities', 'building'])->findOrFail($id);
+        $organization = $this->organizationService->getById($id);
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'id' => $organization->id,
-                'name' => $organization->name,
-                'phones' => $organization->getPhonesArray(),
-                'activities' => $organization->getActivitiesArray(),
-                'building' => [
-                    'id' => $organization->building->id,
-                    'address' => $organization->building->address,
-                    'latitude' => $organization->building->latitude,
-                    'longitude' => $organization->building->longitude,
-                ]
-            ]
+            'data' => $organization
         ]);
     }
 
@@ -188,28 +112,33 @@ class OrganizationController extends Controller
             'name' => 'required|string|min:2',
         ]);
 
-        $organizations = Organization::with(['phones', 'activities', 'building'])
-            ->where('name', 'like', '%' . $request->name . '%')
-            ->get();
-
-        $result = $organizations->map(function ($organization) {
-            return [
-                'id' => $organization->id,
-                'name' => $organization->name,
-                'phones' => $organization->getPhonesArray(),
-                'activities' => $organization->getActivitiesArray(),
-                'building' => [
-                    'id' => $organization->building->id,
-                    'address' => $organization->building->address,
-                    'latitude' => $organization->building->latitude,
-                    'longitude' => $organization->building->longitude,
-                ]
-            ];
-        });
+        $organizations = $this->organizationService->searchByName($request->name);
 
         return response()->json([
             'success' => true,
-            'data' => $result
+            'data' => $organizations
+        ]);
+    }
+
+    /**
+     * Поиск организаций с фильтрами
+     */
+    public function searchWithFilters(Request $request): JsonResponse
+    {
+        $request->validate([
+            'name' => 'nullable|string|min:2',
+            'building_id' => 'nullable|integer|exists:buildings,id',
+            'activity_id' => 'nullable|integer|exists:activities,id',
+            'sort_by' => 'nullable|string|in:name,created_at',
+            'sort_order' => 'nullable|string|in:asc,desc',
+        ]);
+
+        $filters = $request->only(['name', 'building_id', 'activity_id', 'sort_by', 'sort_order']);
+        $organizations = $this->organizationService->searchWithFilters($filters);
+
+        return response()->json([
+            'success' => true,
+            'data' => $organizations
         ]);
     }
 } 

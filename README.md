@@ -142,14 +142,21 @@ docker-compose logs -f db
 
 | Метод | URL | Описание |
 |-------|-----|----------|
-| GET | `/api/buildings` | Список всех зданий |
+| GET | `/api/buildings` | Список всех зданий (с пагинацией) |
 | GET | `/api/buildings/{id}` | Информация о здании |
 | GET | `/api/organizations/building/{id}` | Организации в здании |
 | GET | `/api/organizations/activity/{id}` | Организации по деятельности |
 | GET | `/api/organizations/radius` | Поиск в радиусе |
 | GET | `/api/organizations/area` | Поиск в области |
 | GET | `/api/organizations/search` | Поиск по названию |
+| GET | `/api/organizations/search/filters` | Поиск с фильтрами |
 | GET | `/api/organizations/{id}` | Информация об организации |
+| GET | `/api/activities` | Список деятельностей с иерархией |
+| GET | `/api/activities/{id}` | Информация о деятельности |
+| GET | `/api/activities/{parentId}/children` | Дочерние деятельности |
+| POST | `/api/activities` | Создать деятельность |
+| PUT | `/api/activities/{id}` | Обновить деятельность |
+| DELETE | `/api/activities/{id}` | Удалить деятельность |
 
 ## Остановка
 

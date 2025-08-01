@@ -3,39 +3,38 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Building;
+use App\Services\BuildingService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class BuildingController extends Controller
 {
+    private BuildingService $buildingService;
+
+    public function __construct(BuildingService $buildingService)
+    {
+        $this->buildingService = $buildingService;
+    }
+
     /**
      * Список всех зданий
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $buildings = Building::with(['organizations.phones', 'organizations.activities'])->get();
-
-        $result = $buildings->map(function ($building) {
-            return [
-                'id' => $building->id,
-                'address' => $building->address,
-                'latitude' => $building->latitude,
-                'longitude' => $building->longitude,
-                'organizations_count' => $building->organizations->count(),
-                'organizations' => $building->organizations->map(function ($organization) {
-                    return [
-                        'id' => $organization->id,
-                        'name' => $organization->name,
-                        'phones' => $organization->getPhonesArray(),
-                        'activities' => $organization->getActivitiesArray(),
-                    ];
-                })
-            ];
-        });
+        $perPage = $request->get('per_page', 10);
+        $buildings = $this->buildingService->getAllPaginated($perPage);
 
         return response()->json([
             'success' => true,
-            'data' => $result
+            'data' => $buildings->items(),
+            'pagination' => [
+                'current_page' => $buildings->currentPage(),
+                'last_page' => $buildings->lastPage(),
+                'per_page' => $buildings->perPage(),
+                'total' => $buildings->total(),
+                'from' => $buildings->firstItem(),
+                'to' => $buildings->lastItem(),
+            ]
         ]);
     }
 
@@ -44,24 +43,11 @@ class BuildingController extends Controller
      */
     public function show(int $id): JsonResponse
     {
-        $building = Building::with(['organizations.phones', 'organizations.activities'])->findOrFail($id);
+        $building = $this->buildingService->getById($id);
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'id' => $building->id,
-                'address' => $building->address,
-                'latitude' => $building->latitude,
-                'longitude' => $building->longitude,
-                'organizations' => $building->organizations->map(function ($organization) {
-                    return [
-                        'id' => $organization->id,
-                        'name' => $organization->name,
-                        'phones' => $organization->getPhonesArray(),
-                        'activities' => $organization->getActivitiesArray(),
-                    ];
-                })
-            ]
+            'data' => $building
         ]);
     }
 } 

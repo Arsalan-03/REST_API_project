@@ -14,6 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'api.key' => \App\Http\Middleware\ApiKeyMiddleware::class,
+            'api.logging' => \App\Http\Middleware\ApiLoggingMiddleware::class,
+            'api.rate.limit' => \App\Http\Middleware\ApiRateLimitMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
