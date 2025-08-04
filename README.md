@@ -12,16 +12,24 @@ REST API приложение для работы со справочником 
 ## Функционал API
 
 ### Организации
-- Список организаций в конкретном здании
-- Список организаций по виду деятельности (включая дочерние)
+- Список всех организаций
+- Информация об организации по ID
+- Поиск организаций по названию
+- Поиск организаций с фильтрами
 - Поиск организаций в радиусе от точки
 - Поиск организаций в прямоугольной области
-- Поиск организаций по названию
-- Информация об организации по ID
 
 ### Здания
 - Список всех зданий
 - Информация о здании по ID
+
+### Деятельности
+- Список всех деятельностей с иерархией
+- Информация о деятельности по ID
+- Дочерние деятельности
+- Создание деятельности
+- Обновление деятельности
+- Удаление деятельности
 
 ## Технологии
 
@@ -72,28 +80,42 @@ curl -H "X-API-Key: test-api-key-123" \
   "http://localhost:81/api/buildings"
 ```
 
-### Организации в здании
+### Получение всех организаций
 ```bash
 curl -H "X-API-Key: test-api-key-123" \
-  "http://localhost:81/api/organizations/building/1"
+  "http://localhost:81/api/organizations"
 ```
 
-### Поиск организаций по деятельности
+### Получение всех деятельностей
 ```bash
 curl -H "X-API-Key: test-api-key-123" \
-  "http://localhost:81/api/organizations/activity/1"
+  "http://localhost:81/api/activities"
 ```
 
-### Поиск в радиусе
+### Поиск организаций в радиусе
 ```bash
 curl -H "X-API-Key: test-api-key-123" \
   "http://localhost:81/api/organizations/radius?latitude=55.7558&longitude=37.6176&radius=5"
 ```
 
-### Поиск по названию
+### Поиск организаций по названию
 ```bash
 curl -H "X-API-Key: test-api-key-123" \
   "http://localhost:81/api/organizations/search?name=Рога"
+```
+
+### Поиск организаций с фильтрами
+```bash
+curl -H "X-API-Key: test-api-key-123" \
+  "http://localhost:81/api/organizations/search/filters?name=Рога&building_id=1&activity_id=2&sort_by=name&sort_order=asc"
+```
+
+### Создание деятельности
+```bash
+curl -X POST -H "X-API-Key: test-api-key-123" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Новая деятельность","parent_id":1}' \
+  "http://localhost:81/api/activities"
 ```
 
 ## Структура базы данных
@@ -140,23 +162,31 @@ docker-compose logs -f db
 
 ## API Endpoints
 
+### Organizations (`/api/organizations/`)
 | Метод | URL | Описание |
 |-------|-----|----------|
-| GET | `/api/buildings` | Список всех зданий (с пагинацией) |
-| GET | `/api/buildings/{id}` | Информация о здании |
-| GET | `/api/organizations/building/{id}` | Организации в здании |
-| GET | `/api/organizations/activity/{id}` | Организации по деятельности |
-| GET | `/api/organizations/radius` | Поиск в радиусе |
-| GET | `/api/organizations/area` | Поиск в области |
-| GET | `/api/organizations/search` | Поиск по названию |
-| GET | `/api/organizations/search/filters` | Поиск с фильтрами |
-| GET | `/api/organizations/{id}` | Информация об организации |
-| GET | `/api/activities` | Список деятельностей с иерархией |
-| GET | `/api/activities/{id}` | Информация о деятельности |
-| GET | `/api/activities/{parentId}/children` | Дочерние деятельности |
-| POST | `/api/activities` | Создать деятельность |
-| PUT | `/api/activities/{id}` | Обновить деятельность |
-| DELETE | `/api/activities/{id}` | Удалить деятельность |
+| GET | `/` | Список всех организаций |
+| GET | `/{id}` | Информация об организации |
+| GET | `/search` | Поиск организаций по названию |
+| GET | `/search/filters` | Поиск организаций с фильтрами |
+| GET | `/radius` | Поиск организаций в радиусе |
+| GET | `/area` | Поиск организаций в области |
+
+### Buildings (`/api/buildings/`)
+| Метод | URL | Описание |
+|-------|-----|----------|
+| GET | `/` | Список всех зданий |
+| GET | `/{id}` | Информация о здании |
+
+### Activities (`/api/activities/`)
+| Метод | URL | Описание |
+|-------|-----|----------|
+| GET | `/` | Список всех деятельностей с иерархией |
+| GET | `/{id}` | Информация о деятельности |
+| GET | `/{parentId}/children` | Дочерние деятельности |
+| POST | `/` | Создать деятельность |
+| PUT | `/{id}` | Обновить деятельность |
+| DELETE | `/{id}` | Удалить деятельность |
 
 ## Остановка
 

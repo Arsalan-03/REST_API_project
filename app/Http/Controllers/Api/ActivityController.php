@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\StoreActivityRequest;
+use App\Http\Requests\Api\UpdateActivityRequest;
 use App\Services\ActivityService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class ActivityController extends Controller
@@ -58,15 +59,10 @@ class ActivityController extends Controller
     /**
      * Создать деятельность
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreActivityRequest $request): JsonResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'parent_id' => 'nullable|integer|exists:activities,id',
-        ]);
-
         try {
-            $activity = $this->activityService->create($request->all());
+            $activity = $this->activityService->create($request->validated());
 
             return response()->json([
                 'success' => true,
@@ -84,15 +80,10 @@ class ActivityController extends Controller
     /**
      * Обновить деятельность
      */
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateActivityRequest $request, int $id): JsonResponse
     {
-        $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'parent_id' => 'sometimes|nullable|integer|exists:activities,id',
-        ]);
-
         try {
-            $activity = $this->activityService->update($id, $request->all());
+            $activity = $this->activityService->update($id, $request->validated());
 
             return response()->json([
                 'success' => true,

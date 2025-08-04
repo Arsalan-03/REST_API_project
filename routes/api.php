@@ -22,13 +22,12 @@ Route::middleware(['api.key', 'api.logging', 'api.rate.limit'])->group(function 
     
     // Маршруты для организаций
     Route::prefix('organizations')->group(function () {
-        Route::get('/building/{buildingId}', [OrganizationController::class, 'getByBuilding']);
-        Route::get('/activity/{activityId}', [OrganizationController::class, 'getByActivity']);
-        Route::get('/radius', [OrganizationController::class, 'getByRadius']);
-        Route::get('/area', [OrganizationController::class, 'getByArea']);
+        Route::get('/', [OrganizationController::class, 'index']);
+        Route::get('/{id}', [OrganizationController::class, 'show']);
         Route::get('/search', [OrganizationController::class, 'searchByName']);
         Route::get('/search/filters', [OrganizationController::class, 'searchWithFilters']);
-        Route::get('/{id}', [OrganizationController::class, 'show']);
+        Route::get('/radius', [OrganizationController::class, 'getByRadius']);
+        Route::get('/area', [OrganizationController::class, 'getByArea']);
     });
 
     // Маршруты для зданий

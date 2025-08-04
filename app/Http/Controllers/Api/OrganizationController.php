@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\GetByRadiusRequest;
+use App\Http\Requests\Api\GetByAreaRequest;
+use App\Http\Requests\Api\SearchByNameRequest;
+use App\Http\Requests\Api\SearchWithFiltersRequest;
 use App\Services\OrganizationService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class OrganizationController extends Controller
@@ -17,24 +20,11 @@ class OrganizationController extends Controller
     }
 
     /**
-     * Список всех организаций в конкретном здании
+     * Список всех организаций
      */
-    public function getByBuilding(int $buildingId): JsonResponse
+    public function index(): JsonResponse
     {
-        $organizations = $this->organizationService->getByBuilding($buildingId);
-
-        return response()->json([
-            'success' => true,
-            'data' => $organizations
-        ]);
-    }
-
-    /**
-     * Список всех организаций по виду деятельности
-     */
-    public function getByActivity(int $activityId): JsonResponse
-    {
-        $organizations = $this->organizationService->getByActivity($activityId);
+        $organizations = $this->organizationService->getAll();
 
         return response()->json([
             'success' => true,
@@ -45,14 +35,8 @@ class OrganizationController extends Controller
     /**
      * Список организаций в заданном радиусе
      */
-    public function getByRadius(Request $request): JsonResponse
+    public function getByRadius(GetByRadiusRequest $request): JsonResponse
     {
-        $request->validate([
-            'latitude' => 'required|numeric|between:-90,90',
-            'longitude' => 'required|numeric|between:-180,180',
-            'radius' => 'required|numeric|min:0.1|max:100',
-        ]);
-
         $organizations = $this->organizationService->getByRadius(
             $request->latitude,
             $request->longitude,
@@ -68,15 +52,8 @@ class OrganizationController extends Controller
     /**
      * Список организаций в прямоугольной области
      */
-    public function getByArea(Request $request): JsonResponse
+    public function getByArea(GetByAreaRequest $request): JsonResponse
     {
-        $request->validate([
-            'min_lat' => 'required|numeric|between:-90,90',
-            'max_lat' => 'required|numeric|between:-90,90',
-            'min_lng' => 'required|numeric|between:-180,180',
-            'max_lng' => 'required|numeric|between:-180,180',
-        ]);
-
         $organizations = $this->organizationService->getByArea(
             $request->min_lat,
             $request->max_lat,
@@ -106,12 +83,8 @@ class OrganizationController extends Controller
     /**
      * Поиск организаций по названию
      */
-    public function searchByName(Request $request): JsonResponse
+    public function searchByName(SearchByNameRequest $request): JsonResponse
     {
-        $request->validate([
-            'name' => 'required|string|min:2',
-        ]);
-
         $organizations = $this->organizationService->searchByName($request->name);
 
         return response()->json([
@@ -123,17 +96,9 @@ class OrganizationController extends Controller
     /**
      * Поиск организаций с фильтрами
      */
-    public function searchWithFilters(Request $request): JsonResponse
+    public function searchWithFilters(SearchWithFiltersRequest $request): JsonResponse
     {
-        $request->validate([
-            'name' => 'nullable|string|min:2',
-            'building_id' => 'nullable|integer|exists:buildings,id',
-            'activity_id' => 'nullable|integer|exists:activities,id',
-            'sort_by' => 'nullable|string|in:name,created_at',
-            'sort_order' => 'nullable|string|in:asc,desc',
-        ]);
-
-        $filters = $request->only(['name', 'building_id', 'activity_id', 'sort_by', 'sort_order']);
+        $filters = $request->validated();
         $organizations = $this->organizationService->searchWithFilters($filters);
 
         return response()->json([

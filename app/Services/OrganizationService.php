@@ -10,6 +10,20 @@ use Illuminate\Support\Collection;
 class OrganizationService
 {
     /**
+     * Получить все организации
+     */
+    public function getAll(): Collection
+    {
+        return cache()->remember("organizations_all", 300, function () {
+            $organizations = Organization::with(['phones', 'activities', 'building'])->get();
+            
+            return $organizations->map(function ($organization) {
+                return $this->formatOrganization($organization);
+            });
+        });
+    }
+
+    /**
      * Получить организации в здании
      */
     public function getByBuilding(int $buildingId): Collection
